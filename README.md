@@ -1,9 +1,10 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a lightweight bash script that renders [PlantUML](https://hub.docker.com/r/plantuml/plantuml) diagrams using [Docker](https://www.docker.com/). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://github.com/kovidgoyal/kitty)).
+`qpr` is a lightweight POSIX-compliant shell script that renders [PlantUML](https://hub.docker.com/r/plantuml/plantuml) diagrams using [Docker](https://www.docker.com/). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://github.com/kovidgoyal/kitty)).
 
 ## Features
 
+- **POSIX Compliant**: Compatible with `bash`, `dash`, and `zsh`.
 - **Docker-powered**: No local dependencies other than Docker. The script will prompt to pull the [plantuml/plantuml](https://github.com/plantuml/plantuml) image if it's not found locally.
 - **SVG & PNG Support**: Default output is SVG, with an option for PNG.
 - **Batch Rendering**: Supports multiple files or filename prefixes.
