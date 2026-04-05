@@ -1,0 +1,56 @@
+@startuml
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+/'
+C2 – Container Diagram
+
+Purpose:
+Shows the high-level technical building blocks (*Containers) that make up
+the Software System, their responsibilities, and how they communicate
+with each other, with *People, and with *External Software Systems.
+
+*People:
+- Human users of the system, defined at the System Context (C1) level
+
+*Software System:
+- Software System: The system under consideration
+
+*Containers:
+- Container: A separately deployable and/or runnable unit that executes
+  code or stores data (e.g., web UI, API, background worker, database)
+
+*External Software Systems:
+- Other Software Systems that interact with one or more containers
+
+*Relationships:
+- People -> Containers: Use the system via client or interface containers
+- Container -> Container: Communicate using synchronous or asynchronous mechanisms
+- Container -> External Software System: Integrate via APIs, messaging, or data exchange
+
+Architecture Notes:
+- This diagram captures the system’s high-level architecture
+  (e.g., client–server, n-tier, microservices, event-driven)
+- Containers should represent runtime and deployment boundaries
+- Communication styles and protocols should be shown when architecturally significant
+- Internal design patterns (e.g., MVC, layered, hexagonal) are out of scope
+  and belong to the Component (C3) level
+- Infrastructure and deployment topology are typically documented separately
+'/
+
+Person(user, "User", "A person who browses and reads recipes.")
+System_Boundary(recipe_blog_boundary, "RecipeBlog") {
+    Container(web_app, "Web App", "Single-Page Application", "Provides the user interface.")
+    Container(api_service, "API Service", "REST API", "Handles recipe logic and data.")
+    ContainerDb(database, "Database", "Relational Database", "Stores recipe text and metadata.")
+}
+System_Ext(cdn, "CDN", "Stores and delivers high-resolution recipe images.")
+
+Rel(user, web_app, "Uses", "HTTPS")
+Rel(web_app, api_service, "Makes API calls to", "JSON/HTTPS")
+Rel(api_service, database, "Reads from and writes to")
+Rel(api_service, cdn, "Uploads images to")
+Rel(web_app, cdn, "Fetches images from")
+
+@enduml
+

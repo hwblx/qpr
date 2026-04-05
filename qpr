@@ -1,0 +1,126 @@
+#!/bin/bash
+# Render one or more PlantUML diagrams using Docker
+# Usage:
+#   qpr [options] <prefix-or-filename>...
+# Options:
+#   --png        Output PNG instead of SVG
+#   --print      Display PNG in terminal (implies --png)
+#   -q, --quiet  Suppress output messages
+#   -h, --help   Show this help message
+set -e
+
+show_help() {
+    echo "Usage: qpr [options] <prefix-or-filename>..."
+    echo ""
+    echo "Options:"
+    echo "  --png        Output PNG instead of SVG"
+    echo "  --print      Display PNG in terminal (implies --png)"
+    echo "  -q, --quiet  Suppress output messages"
+    echo "  -h, --help   Show this help message"
+}
+
+FORMAT="tsvg"
+PRINT_IMAGE=false
+QUIET=false
+IMAGE="plantuml/plantuml:latest"
+
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        --png)
+            FORMAT="tpng"
+            shift
+            ;;
+        --print)
+            FORMAT="tpng"
+            PRINT_IMAGE=true
+            shift
+            ;;
+        -q|--quiet)
+            QUIET=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+if [ $# -eq 0 ]; then
+    show_help
+    exit 1
+fi
+
+if [ "$PRINT_IMAGE" = true ] && ! command -v kitten &> /dev/null; then
+    echo "Error: 'kitten' command not found. Required for --print."
+    exit 1
+fi
+
+if ! docker image inspect "$IMAGE" &> /dev/null; then
+    echo "Docker image '$IMAGE' not found locally."
+    read -p "Do you want to pull it now? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborting."
+        exit 1
+    fi
+    docker pull "$IMAGE"
+fi
+
+FILES=()
+for ARG in "$@"; do
+    if [[ "$ARG" == *.puml ]]; then
+        if [ ! -f "$ARG" ]; then
+            echo "Error: file '${ARG}' does not exist"
+            exit 1
+        fi
+        FILES+=("$ARG")
+    else
+        BASE_FILE="${ARG}.puml"
+        PATTERN="${ARG}*.puml"
+        shopt -s nullglob
+        MATCHES=($PATTERN)
+        shopt -u nullglob
+        if [ ${#MATCHES[@]} -eq 0 ]; then
+            echo "Error: no files matching '${PATTERN}'"
+            exit 1
+        fi
+        [[ -f "$BASE_FILE" ]] && FILES+=("$BASE_FILE")
+        for f in $(printf "%s\n" "${MATCHES[@]}" | sort); do
+            [[ "$f" == "$BASE_FILE" ]] && continue
+            FILES+=("$f")
+        done
+    fi
+done
+
+if [ "$QUIET" = false ]; then
+    VERSION=$(docker run --rm "$IMAGE" plantuml -version | sed -n '1p')
+    echo "Using $VERSION"
+fi
+
+for file in "${FILES[@]}"; do
+    [ "$QUIET" = false ] && echo "Rendering $file ..."
+    # Get absolute path relative to the mount point
+    ABS_FILE="/workspace/$(realpath --relative-to="$(pwd)" "$file")"
+    ABS_DIR="/workspace/$(realpath --relative-to="$(pwd)" "$(dirname "$file")")"
+
+    docker run --rm \
+      --user "$(id -u):$(id -g)" \
+      -v "$(pwd)":/workspace \
+      -w /workspace \
+      "$IMAGE" \
+      plantuml -${FORMAT} "$ABS_FILE" -o "$ABS_DIR"
+
+    if [ "$PRINT_IMAGE" = true ]; then
+        PNG_FILE="${file%.puml}.png"
+        [ -f "$PNG_FILE" ] && kitten icat "$PNG_FILE"
+    fi
+done
+
+[ "$QUIET" = false ] && echo "Done! Rendered ${#FILES[@]} diagram(s)."
+

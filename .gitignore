@@ -1,0 +1,44 @@
+# Ignore compiled files
+*.o
+*.a
+*.so
+*.out
+
+# Ignore bash history
+*.bash_history
+
+# Ignore environment files
+.env
+*.env
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*~
+*.swp
+*.swo
+*.bak
+
+# Ignore editor-specific files (e.g., Vim, Emacs, etc.)
+*.vim
+*.vimrc
+*.idea/
+*.vscode/
+.aider.*
+
+# Ignore node_modules (if the project contains Node.js dependencies)
+node_modules/
+
+# Ignore system-specific files
+.DS_Store    # macOS
+Thumbs.db    # Windows
+
+# Ignore coverage and testing files (if using any testing framework)
+coverage/
+*.coverage
+test-results/
+
+# Ignore package manager lock files (if relevant)
+package-lock.json
+yarn.lock
