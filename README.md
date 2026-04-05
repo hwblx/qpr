@@ -1,10 +1,10 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a lightweight bash script that renders PlantUML diagrams using Docker. It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting Kitty).
+`qpr` is a lightweight bash script that renders [PlantUML](https://hub.docker.com/r/plantuml/plantuml) diagrams using [Docker](https://www.docker.com/). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://github.com/kovidgoyal/kitty)).
 
 ## Features
 
-- **Docker-powered**: No local dependencies other than Docker. The script will prompt to pull the `plantuml/plantuml` image if it's not found locally.
+- **Docker-powered**: No local dependencies other than Docker. The script will prompt to pull the [plantuml/plantuml](https://github.com/plantuml/plantuml) image if it's not found locally.
 - **SVG & PNG Support**: Default output is SVG, with an option for PNG.
 - **Batch Rendering**: Supports multiple files or filename prefixes.
 - **Terminal Preview**: Integration with Kitty terminal (`kitten icat`) to display diagrams directly in your terminal.
@@ -13,7 +13,7 @@
 ## Templates
 
 The repository includes a `templates/` directory with starter files that you can copy and modify for your own projects:
-- **C4 Model**: Templates for System Context (C1), Container (C2), Component (C3), and Code (C4) diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
+- **[C4-Model](https://c4model.com)**: Templates for System Context (C1), Container (C2), Component (C3), and Code (C4) diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
 
 ## Prerequisites
 
