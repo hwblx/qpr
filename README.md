@@ -57,6 +57,3 @@ Render all `.puml` files starting with the prefix "c4" to PNG and preview them i
 qpr --print c4
 ```
 
-## License
-
-MIT
