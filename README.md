@@ -52,9 +52,9 @@ Render a specific `.puml` file to SVG:
 qpr diagram.puml
 ```
 
-Render all `.puml` files starting with the prefix "c" to PNG and preview them in the terminal:
+Render all `.puml` files starting with the prefix "c4" to PNG and preview them in the terminal:
 ```bash
-qpr --print c
+qpr --print c4
 ```
 
 ## License
