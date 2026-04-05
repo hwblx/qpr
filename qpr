@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Render one or more PlantUML diagrams using Docker
 # Usage:
 #   qpr [options] <prefix-or-filename>...
@@ -24,7 +24,7 @@ PRINT_IMAGE=false
 QUIET=false
 IMAGE="plantuml/plantuml:latest"
 
-while [[ "$1" == -* ]]; do
+while [ $# -gt 0 ]; do
     case "$1" in
         --png)
             FORMAT="tpng"
@@ -43,10 +43,13 @@ while [[ "$1" == -* ]]; do
             show_help
             exit 0
             ;;
-        *)
+        -*)
             echo "Unknown option: $1"
             show_help
             exit 1
+            ;;
+        *)
+            break
             ;;
     esac
 done
@@ -56,65 +59,88 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-if [ "$PRINT_IMAGE" = true ] && ! command -v kitten &> /dev/null; then
+if [ "$PRINT_IMAGE" = true ] && ! command -v kitten > /dev/null 2>&1; then
     echo "Error: 'kitten' command not found. Required for --print."
     exit 1
 fi
 
-if ! docker image inspect "$IMAGE" &> /dev/null; then
+if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
     echo "Docker image '$IMAGE' not found locally."
-    read -p "Do you want to pull it now? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Aborting."
-        exit 1
-    fi
+    printf "Do you want to pull it now? [y/N] "
+    read -r REPLY
+    case "$REPLY" in
+        [Yy]*) ;;
+        *) echo "Aborting."; exit 1 ;;
+    esac
     docker pull "$IMAGE"
 fi
 
-FILES=()
+# Collect files into positional parameters
+# We use a variable to build the list to avoid losing original script arguments too early
+TMP_FILES=""
 for ARG in "$@"; do
-    if [[ "$ARG" == *.puml ]]; then
-        if [ ! -f "$ARG" ]; then
-            echo "Error: file '${ARG}' does not exist"
-            exit 1
-        fi
-        FILES+=("$ARG")
-    else
-        BASE_FILE="${ARG}.puml"
-        PATTERN="${ARG}*.puml"
-        shopt -s nullglob
-        MATCHES=($PATTERN)
-        shopt -u nullglob
-        if [ ${#MATCHES[@]} -eq 0 ]; then
-            echo "Error: no files matching '${PATTERN}'"
-            exit 1
-        fi
-        [[ -f "$BASE_FILE" ]] && FILES+=("$BASE_FILE")
-        for f in $(printf "%s\n" "${MATCHES[@]}" | sort); do
-            [[ "$f" == "$BASE_FILE" ]] && continue
-            FILES+=("$f")
-        done
-    fi
+    case "$ARG" in
+        *.puml)
+            if [ ! -f "$ARG" ]; then
+                echo "Error: file '${ARG}' does not exist"
+                exit 1
+            fi
+            TMP_FILES="${TMP_FILES}${ARG}
+"
+            ;;
+        *)
+            ARG_DIR=$(dirname "$ARG")
+            ARG_BASE=$(basename "$ARG")
+            BASE_FILE="${ARG}.puml"
+            FOUND=false
+            for f in "${ARG}"*.puml; do
+                [ -e "$f" ] || continue
+                FOUND=true
+                break
+            done
+            if [ "$FOUND" = false ]; then
+                echo "Error: no files matching '${ARG}*.puml'"
+                exit 1
+            fi
+            [ -f "$BASE_FILE" ] && TMP_FILES="${TMP_FILES}${BASE_FILE}
+"
+            MATCHES=$(find "$ARG_DIR" -maxdepth 1 -name "${ARG_BASE}*.puml" | sort)
+            for f in $MATCHES; do
+                [ "$f" = "$BASE_FILE" ] && continue
+                TMP_FILES="${TMP_FILES}${f}
+"
+            done
+            ;;
+    esac
 done
 
-if [ "$QUIET" = false ]; then
+# Set positional parameters to the collected files
+set --
+while IFS= read -r f; do
+    [ -n "$f" ] && set -- "$@" "$f"
+done <<EOF
+$TMP_FILES
+EOF
+
+COUNT=$#
+
+if [ "$QUIET" = "false" ]; then
     VERSION=$(docker run --rm "$IMAGE" plantuml -version | sed -n '1p')
     echo "Using $VERSION"
 fi
 
-for file in "${FILES[@]}"; do
-    [ "$QUIET" = false ] && echo "Rendering $file ..."
-    # Get absolute path relative to the mount point
-    ABS_FILE="/workspace/$(realpath --relative-to="$(pwd)" "$file")"
-    ABS_DIR="/workspace/$(realpath --relative-to="$(pwd)" "$(dirname "$file")")"
+for file in "$@"; do
+    [ "$QUIET" = "false" ] && echo "Rendering $file ..."
+    # Get absolute directory and filename
+    FILE_DIR=$(cd "$(dirname "$file")" && pwd)
+    FILE_NAME=$(basename "$file")
 
     docker run --rm \
       --user "$(id -u):$(id -g)" \
-      -v "$(pwd)":/workspace \
+      -v "$FILE_DIR":/workspace \
       -w /workspace \
       "$IMAGE" \
-      plantuml -${FORMAT} "$ABS_FILE" -o "$ABS_DIR"
+      plantuml -${FORMAT} "$FILE_NAME" -o /workspace
 
     if [ "$PRINT_IMAGE" = true ]; then
         PNG_FILE="${file%.puml}.png"
@@ -122,5 +148,5 @@ for file in "${FILES[@]}"; do
     fi
 done
 
-[ "$QUIET" = false ] && echo "Done! Rendered ${#FILES[@]} diagram(s)."
+[ "$QUIET" = "false" ] && echo "Done! Rendered $COUNT diagram(s)."
 
