@@ -1,0 +1,52 @@
+@startuml
+
+/'
+Class Diagram – Advanced Features
+
+Purpose:
+Demonstrates advanced PlantUML features for organizing large diagrams,
+adding annotations, and controlling layout.
+
+*Relationships:
+- Extension (<|--): Inheritance/Generalization (is-a)
+- Composition (*--): A strong "part-of" relationship (lifecycle bound)
+- Dependency (..>): A usage relationship where one class depends on another
+
+*Features:
+- package: Groups related classes into a namespace or module
+- note: Adds explanatory text to packages or classes
+'/
+
+class UserAccount #AliceBlue {
+    - username: string
+    - password_hash: string
+    # email_address: string
+    + is_active: boolean
+    
+    + login(password: string): boolean
+    + update_email(new_email: string): void
+    # validate_format(data: string): boolean
+    - hash_password(raw_password: string): string
+}
+
+class PremiumAccount #HoneyDew {
+    + billing_cycle: string
+    + get_priority_support(): void
+}
+
+class Profile #Ivory {
+    + display_name: string
+    + bio: string
+    + update_profile(data: string): void
+}
+
+class Authenticator #MistyRose {
+    - provider_name: string
+    + verify_token(token: string): boolean
+}
+
+UserAccount <|-- PremiumAccount : extension
+UserAccount *-- Profile : composition
+UserAccount ..> Authenticator : dependency
+
+@enduml

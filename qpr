@@ -137,10 +137,12 @@ for file in "$@"; do
 
     docker run --rm \
       --user "$(id -u):$(id -g)" \
+      -e HOME=/tmp \
+      -e JAVA_TOOL_OPTIONS="-Duser.home=/tmp -Djava.io.tmpdir=/tmp" \
       -v "$FILE_DIR":/workspace \
       -w /workspace \
       "$IMAGE" \
-      plantuml -${FORMAT} "$FILE_NAME" -o /workspace
+      plantuml -${FORMAT} "$FILE_NAME" -o /workspace 2>/dev/null
 
     if [ "$PRINT_IMAGE" = true ]; then
         PNG_FILE="${file%.puml}.png"

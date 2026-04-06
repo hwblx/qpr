@@ -1,0 +1,27 @@
+@startuml
+
+/'
+Activity Diagram – Basic Flow
+
+Purpose:
+Illustrates the fundamental flow of a process using start/stop points,
+actions, and a simple decision.
+
+*Elements:
+- start/stop: Beginning and end of the flow
+- :Action;: A single step in the process
+- if/then/else: Conditional branching
+'/
+
+start
+:Enter Username;
+:Enter Password;
+if (Credentials Valid?) then (yes)
+  :Login Successful;
+  stop
+else (no)
+  :Show Error Message;
+  stop
+endif
+
+@enduml
