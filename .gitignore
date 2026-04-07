@@ -26,7 +26,7 @@
 *.idea/
 *.vscode/
 .aider.*
-# .doc/
+*.mp4
 
 # Ignore node_modules (if the project contains Node.js dependencies)
 node_modules/
