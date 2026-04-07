@@ -2,7 +2,7 @@
 
 `qpr` is a lightweight Bash, Dash or Zsh script that renders [PlantUML](https://plantuml.com/) diagrams using [Docker](https://www.docker.com/). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://sw.kovidgoyal.net/kitty/)).
 
-[![See Demo](./doc/screenshot.png)](./doc/demo.mp4)
+[![See Demo](.doc/screenshot.png)](.doc/demo.mp4)
 
 ## Features
 
