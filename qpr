@@ -76,7 +76,6 @@ if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
 fi
 
 # Collect files into positional parameters
-# We use a variable to build the list to avoid losing original script arguments too early
 TMP_FILES=""
 for ARG in "$@"; do
     case "$ARG" in
@@ -142,7 +141,7 @@ for file in "$@"; do
       -v "$FILE_DIR":/workspace \
       -w /workspace \
       "$IMAGE" \
-      plantuml -${FORMAT} "$FILE_NAME" -o /workspace 2>/dev/null
+      plantuml -${FORMAT} "$FILE_NAME" -o /workspace 2>&1 | grep -v "Picked up JAVA_TOOL_OPTIONS" || true
 
     if [ "$PRINT_IMAGE" = true ]; then
         PNG_FILE="${file%.puml}.png"

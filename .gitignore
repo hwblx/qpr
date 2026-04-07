@@ -26,7 +26,7 @@
 *.idea/
 *.vscode/
 .aider.*
-.doc/
+# .doc/
 
 # Ignore node_modules (if the project contains Node.js dependencies)
 node_modules/
