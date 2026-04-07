@@ -21,8 +21,10 @@
 
 ## Templates
 
-The repository includes a `templates/` directory with starter files that you can copy and modify for your own projects:
-- **[C4-Model](https://c4model.com)**: Templates for System Context (C1), Container (C2), Component (C3), and Code (C4) diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
+The repository includes a `templates/` directory with starter files that you can copy and modify for testing the qpr workflow:
+- **[C4 Diagrams](https://c4model.com)**: Templates for System Context (C1), Container (C2), Component (C3), and Code (C4) diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
+- **Class Diagrams**
+- **Activity Diagrams**
 
 ## Prerequisites
 
