@@ -1,13 +1,13 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a lightweight Bash, Dash or Zsh script that renders [PlantUML](https://plantuml.com/) diagrams using [Docker](https://www.docker.com/). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://sw.kovidgoyal.net/kitty/)).
+`qpr` is a lightweight Bash, Dash or Zsh script that renders [PlantUML](https://plantuml.com/) diagrams using the official [Docker image](https://hub.docker.com/r/plantuml/plantuml). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://sw.kovidgoyal.net/kitty/)).
 
 <p align="center">
   <a href="https://res.cloudinary.com/du23meydk/video/upload/v1775570388/demo_rlreav.mp4">
     <img src=".doc/thumbnail.png" alt="See Demo" width="160"/>
   </a>
   <br/>
-  <em>Demo video</em>
+  <em>(Demo video)</em>
 </p>
 
 ## Features
@@ -22,9 +22,9 @@
 ## Templates
 
 The repository includes a `templates/` directory with starter files that you can copy and modify for testing the `qpr` workflow:
-- **[C4 Diagrams](https://c4model.com)**: Templates for System Context, Container, Component, and Code diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
-- **Class Diagrams**
-- **Activity Diagrams**
+- **[C4 Diagram](https://c4model.com)**: Templates for System Context, Container, Component, and Code diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
+- **[Class Diagram](https://plantuml.com/class-diagram)**
+- **[Activity Diagram](https://plantuml.com/activity-diagram-beta)**
 
 ## Prerequisites
 
