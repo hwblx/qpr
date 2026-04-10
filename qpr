@@ -113,12 +113,16 @@ for ARG in "$@"; do
     esac
 done
 
-# Set positional parameters to the collected files
+# Set positional parameters to the collected files (unique)
+# 'set --' clears existing arguments.
+# 'IFS=' prevents trimming whitespace from filenames.
+# 'read -r' handles backslashes correctly.
+# The '<<EOF' block feeds the sorted, unique list of files into the loop.
 set --
-while IFS= read -r f; do
-    [ -n "$f" ] && set -- "$@" "$f"
+while IFS= read -r FILENAME; do
+    [ -n "$FILENAME" ] && set -- "$@" "$FILENAME"
 done <<EOF
-$TMP_FILES
+$(echo "$TMP_FILES" | sort -u)
 EOF
 
 COUNT=$#

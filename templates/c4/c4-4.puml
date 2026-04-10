@@ -38,7 +38,15 @@ Design Notes:
 - The goal is explanation, not exhaustiveness
 '/
 
-Container_Boundary(recipe_repo_boundary, "Recipe Repository") {
+skinparam packageStyle rectangle
+skinparam package {
+    BackgroundColor #F8F9FA
+    BorderColor #2E4053
+    FontStyle bold
+}
+
+package "<<Recipe Repository>>\n<size:12><color:#333333>[Component]" as recipe_repo_boundary {
+
     class RecipeRepository {
         +GetById(id: string): Recipe
         +Save(recipe: Recipe)
@@ -51,10 +59,10 @@ Container_Boundary(recipe_repo_boundary, "Recipe Repository") {
     }
 }
 
-ContainerDb(database, "Database", "Relational Database", "Stores recipe text and metadata.")
+ContainerDb(database, "Database", "Relational DB", "Stores recipe text and metadata")
 
 RecipeRepository ..> Recipe : uses
-RecipeRepository --> database : reads from and writes to
+RecipeRepository --> database : reads/writes
 
 @enduml
 
