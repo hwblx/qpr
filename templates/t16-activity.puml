@@ -1,0 +1,45 @@
+@startuml
+!theme amiga
+skinparam backgroundColor #black
+
+|#0D0D0D|IoT Gateway|
+start
+:Collect raw sensor data;
+:Format as JSON/MQTT;
+:Send to API Application;
+
+|#1A1A1A|Telemetry Controller|
+:Receive request;
+:Extract JWT Token;
+
+|#0D0D0D|Security Component|
+if (Validate Token?) then (valid)
+  :Return User Context;
+else (invalid)
+  :Return 401 Unauthorized;
+  stop
+endif
+
+|Telemetry Controller|
+:Forward data to Processing;
+
+|#1A1A1A|Data Processing Service|
+:Validate data schema;
+if (Schema Valid?) then (yes)
+  :Transform to TelemetryRecord;
+else (no)
+  :Log error;
+  stop
+endif
+
+|#0D0D0D|Persistence Component|
+:Save record to Database;
+
+|#1A1A1A|Database|
+:Commit transaction;
+
+|Telemetry Controller|
+:Return 202 Accepted;
+stop
+
+@enduml

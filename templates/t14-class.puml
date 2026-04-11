@@ -1,10 +1,15 @@
 @startuml
-!include <C4/C4_Context>
-!include <C4/C4_Container>
-!include <C4/C4_Component>
+!theme aws-orange
+' !theme cloudscape-design
+' !theme mars
+' !theme reddress-darkblue
+' !theme sunlust
+' !theme toy
+' !theme vibrant
+skinparam backgroundColor #black
 
-allowmixing
-
+skinparam ArrowFontColor #FFFFFF
+skinparam RectangleBorderColor #999999
 /'
 C4 – Code Diagram
 
@@ -38,31 +43,33 @@ Design Notes:
 - The goal is explanation, not exhaustiveness
 '/
 
-skinparam packageStyle rectangle
-skinparam package {
-    BackgroundColor #F8F9FA
-    BorderColor #2E4053
-    FontStyle bold
+top to bottom direction
+
+rectangle "<<Component>>\nSecurityComponent\n[FastAPI]" {
+class JWTAuthenticator {
+    -secret_key: string
+    -algorithm: string
+    +authenticate(token: string): User
+    +create_access_token(data: dict): string
 }
 
-package "<<Recipe Repository>>\n<size:12><color:#333333>[Component]" as recipe_repo_boundary {
-
-    class RecipeRepository {
-        +GetById(id: string): Recipe
-        +Save(recipe: Recipe)
-    }
-
-    class Recipe {
-        +Id: string
-        +Title: string
-        +Instructions: string
-    }
+class PasswordHasher {
+    +verify_password(plain: string, hashed: string): bool
+    +get_password_hash(password: string): string
 }
 
-ContainerDb(database, "Database", "Relational DB", "Stores recipe text and metadata")
+interface UserProvider {
+    +get_user(username: string): User
+}
 
-RecipeRepository ..> Recipe : uses
-RecipeRepository --> database : reads/writes
+class DatabaseUserProvider {
+    +get_user(username: string): User
+}
+
+JWTAuthenticator --down--> UserProvider : "Uses to fetch user"
+DatabaseUserProvider ..up|> UserProvider : "Implements"
+JWTAuthenticator --right--> PasswordHasher : "Uses for verification"
+}
 
 @enduml
 
