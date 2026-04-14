@@ -6,8 +6,9 @@
 ' !include C4-PlantUML/C4_Container.puml
 ' !include C4-PlantUML/C4_Component.puml
 !theme cloudscape-design
-skinparam backgroundColor #black
-skinparam defaultFontColor #white
+skinparam backgroundColor black
+skinparam defaultFontColor white
+skinparam package<<boundary>>BorderColor #00AEEF
 
 /'
 C3 – Component Diagram
@@ -36,14 +37,13 @@ Scope:
 - Controllers -> Data Processing: Business logic execution
 - Data Processing -> Persistence: Data storage and retrieval
 - Persistence -> Database: SQL queries
-
 '/
 
 System_Ext(browser, "Browser", "Web interface used by people")
 System_Ext(gateway, "IoT Gateway", "Aggregates and translates sensor data")
 ContainerDb(database, "Database", "TimescaleDB/PostgreSQL", "Stores telemetry and metadata")
 
-Container_Boundary(api_app, "API Application") {
+Container_Boundary(api_app, "API Application") <<boundary>> {
     Component(security, "Security Component", "FastAPI Security", "Handles authentication and authorization")
     Component(telemetry_ctrl, "Telemetry Controller", "FastAPI Router", "Endpoints for sensor data ingestion")
     Component(mgmt_ctrl, "Management Controller", "FastAPI Router", "Endpoints for user and system management")
@@ -62,6 +62,5 @@ Rel(telemetry_ctrl, proc_service, "Uses")
 
 Rel(proc_service, persistence, "Uses")
 Rel(persistence, database, "Reads from and writes to", "SQL/TCP")
-
 @enduml
 

@@ -1,0 +1,40 @@
+@startuml
+!include <C4/C4_Context>
+
+/'
+C1 – System Context Diagram
+
+Purpose:
+Shows the Software System under consideration as a black box, and how it
+interacts with human users (*People) and other software systems (*Software Systems).
+
+*People:
+- Anonymous User: A human user who interacts without authentication
+- Authenticated User: A signed-in, registered user
+- Administrator: A human user responsible for system administration
+
+*Software Systems:
+- Software System: The system under consideration
+- External Software System(s): Other systems that interact with the system
+
+*Relationships:
+- People -> Software System: Use the system
+- Software System -> External Software System(s): Exchange data or trigger actions
+
+Notes:
+- People represent human users only
+- Automated interactions are modeled as Software Systems
+- Internal structure and implementation details are intentionally omitted
+
+Legend:
+- Items marked with * must be defined to generate the project-specific .puml
+'/
+
+Person(user, "User", "A person who browses and reads recipes.")
+System(recipe_blog, "RecipeBlog", "Allows users to search and view recipes.")
+System_Ext(cdn, "CDN", "Stores and delivers high-resolution recipe images.")
+
+Rel(user, recipe_blog, "Views recipes using")
+Rel(recipe_blog, cdn, "Stores and fetches images from")
+
+@enduml

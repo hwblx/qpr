@@ -1,3 +1,11 @@
+# project files
+.aider.*
+*.mp4
+.todo
+video/
+message.txt
+.diff-*
+
 # Ignore compiled files
 *.o
 *.a
@@ -25,8 +33,6 @@
 *.vimrc
 *.idea/
 *.vscode/
-.aider.*
-*.mp4
 
 # Ignore node_modules (if the project contains Node.js dependencies)
 node_modules/

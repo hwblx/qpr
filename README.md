@@ -1,10 +1,10 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a lightweight Bash, Dash or Zsh script that renders [PlantUML](https://plantuml.com/) diagrams using the official [Docker image](https://hub.docker.com/r/plantuml/plantuml). It simplifies the process of generating SVG or PNG diagrams from the terminal without requiring a local Java or PlantUML installation. Diagrams can also be displayed directly in graphics-capable terminals (currently supporting [Kitty](https://sw.kovidgoyal.net/kitty/)).
+`qpr` is a minimal Bash, Dash, or Zsh wrapper that renders [PlantUML](https://plantuml.com/) diagrams using the official [Docker image](https://hub.docker.com/r/plantuml/plantuml). It provides a simple interface for generating SVG and PNG output from the command line while removing the need for local Java or PlantUML dependencies. With support for displaying diagrams in graphics-capable terminals like [Kitty](https://sw.kovidgoyal.net/kitty/), `qpr` fits naturally into integrated, terminal-centric development workflows.
 
 <p align="center">
-  <a href="https://res.cloudinary.com/du23meydk/video/upload/f_mp4,vc_h264:baseline,ac_aac,q_auto/demo_rlreav.mp4">
-    <img src=".doc/thumbnail.png" alt="See Demo" width="160"/>
+  <a href="https://res.cloudinary.com/du23meydk/video/upload/qpr_demo_v2_zo9b24.mp4">
+    <img src=".doc/thumbnail.png" alt="See Demo" width="240"/>
   </a>
   <br/>
   <em>(Demo video)</em>
@@ -13,18 +13,12 @@
 ## Features
 
 - **POSIX Compliant**: Compatible with `bash`, `dash`, and `zsh`.
-- **Docker-powered**: No local dependencies other than Docker. The script will prompt to pull the [plantuml/plantuml](https://hub.docker.com/r/plantuml/plantuml) image if it's not found locally.
-- **SVG & PNG Support**: Default output is SVG, with an option for PNG.
+- **Docker-powered**: Requires no local dependencies other than Docker. The script will prompt you to pull the [plantuml/plantuml](https://hub.docker.com/r/plantuml/plantuml) image if it's not available locally.
+- **SVG & PNG Support**: Defaults to SVG output, with optional PNG generation.
 - **Batch Rendering**: Supports multiple files or filename prefixes.
-- **Terminal Preview**: Integration with Kitty terminal (`kitten icat`) to display diagrams directly in your terminal.
-- **Smart Path Handling**: Automatically resolves relative paths for Docker volume mounting.
-
-## Templates
-
-The repository includes a `templates/` directory with starter files that you can copy and modify for testing the `qpr` workflow:
-- **[C4 Diagram](https://c4model.com)**: Templates for System Context, Container, Component, and Code diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library.
-- **[Class Diagram](https://plantuml.com/class-diagram)**
-- **[Activity Diagram](https://plantuml.com/activity-diagram-beta)**
+- **`--watch` flag:** Automatically re-renders files when changes are detected.
+- **Terminal Preview**: Integration with Kitty terminal (`kitten icat`) to display diagrams directly in the terminal.
+- **Thumbnails:** Provides image previews.
 
 ## Prerequisites
 
@@ -50,10 +44,13 @@ qpr [options] <prefix-or-filename>...
 
 ### Options
 
-- `--png`          Output PNG instead of the default SVG.
-- `--print`        Display the resulting PNG in the terminal (requires Kitty terminal). Implies the `--png` flag.
-- `-q, --quiet`    Suppress status messages.
-- `-h, --help`     Show help message.
+- `--png`            Output PNG instead of the default SVG.
+- `--print`          Display the resulting PNG in the terminal (requires Kitty terminal). Implies `--png`.
+- `--thumbnails=N`   Display N thumbnails per row (implies `--print`, `--quiet`)
+-  `-p, --page`      Page output (implies `--print`, `--quiet`)
+-  `-w, --watch`     Watch for file changes and re-render
+- `-q, --quiet`      Suppress status messages.
+- `-h, --help`       Show help message.
 
 ### Examples
 
@@ -66,4 +63,48 @@ Render all `.puml` files starting with the prefix "c4" to PNG and preview them i
 ```bash
 qpr --print c4
 ```
+### Templates
 
+The repository includes a `templates/` directory with starter files that you can copy and modify for testing the `qpr` workflow: [C4](https://c4model.com) (Context, Container, and Component diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library), [Class Diagram](https://plantuml.com/class-diagram) and [Activity Diagram](https://plantuml.com/activity-diagram-beta).
+## Integration
+
+The `qpr` workflow integrates PlantUML into a terminal-based, IDE-like experience suitable for occasional diagramming. More of a concept than a fully-fledged tool, `qpr` may not have reached its limits yet and could be further improved. This section outlines some ideas for future enhancements.
+
+
+### Basic Concept
+A graphics-capable terminal UI divided into three panes: a rendering layer, a code editor, and an AI agent for interactive assistance.
+
+```
+  Terminal (graphics-capable)
+  +------------------------+------------------------+
+  | Renderer (qpr)         | Editor (multi-tab)     |
+  |                        |                        |
+  |                        |                        |
+  |                        |                        |
+  |                        |                        |
+  |                        |                        |
+  |                        |                        |
+  |                        |                        |
+  |                        +------------------------+
+  |                        | AI agent               |
+  |                        |                        |
+  +------------------------+------------------------+
+```
+
+
+### Potential Improvements
+- Terminal
+  - Add keyboard shortcuts and commands to improve the IDE-like experience.
+- Renderer
+  - Keep the PlantUML instance warm to speed up rendering of multiple diagrams.
+  - Improve robustness of image output during scrolling.
+- Editor
+  - Add keyboard shortcuts and plugin support to enhance the IDE-like experience.
+- AI Agent
+  - Explore LLMs and prompting strategies that perform well in an IDE workflow.
+
+## Acknowledgments
+
+- **PlantUML** for its powerful diagramming capabilities.
+- **Kitty** for its excellent graphics protocol.
+- **C4 model** for making software architecture easier to visualize and understand.

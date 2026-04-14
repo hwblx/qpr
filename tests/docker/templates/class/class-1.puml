@@ -1,0 +1,32 @@
+@startuml
+
+/'
+Class Diagram – Basic definitions
+
+Purpose:
+Focuses on the internal structure of a single class, illustrating
+attributes, methods, and visibility modifiers.
+
+*Visibility:
+- - : private (accessible only within the class)
+- # : protected (accessible to subclasses)
+- + : public (accessible from anywhere)
+
+*Members:
+- Attributes: Data fields with types
+- Methods: Functions with parameters and return types
+'/
+
+class UserAccount {
+    - username: string
+    - password_hash: string
+    # email_address: string
+    + is_active: boolean
+    
+    + login(password: string): boolean
+    + update_email(new_email: string): void
+    # validate_format(data: string): boolean
+    - hash_password(raw_password: string): string
+}
+
+@enduml

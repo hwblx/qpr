@@ -6,10 +6,13 @@
 ' !theme sunlust
 ' !theme toy
 ' !theme vibrant
-skinparam backgroundColor #black
-
-skinparam ArrowFontColor #FFFFFF
-skinparam RectangleBorderColor #999999
+skinparam backgroundColor black
+skinparam RectangleBorderColor #00AEEF
+skinparam ArrowFontColor #00AEEF
+skinparam ArrowFontSize 14
+skinparam ClassAttributeFontSize 12
+skinparam RectangleFontColor #CCCCCC
+skinparam rectangleBorderStyle dashed
 /'
 C4 – Code Diagram
 
@@ -42,10 +45,10 @@ Design Notes:
 - This diagram is not a complete UML class diagram
 - The goal is explanation, not exhaustiveness
 '/
-
 top to bottom direction
 
-rectangle "<<Component>>\nSecurityComponent\n[FastAPI]" {
+rectangle "<<Component>>\nSecurityComponent\n<color:#999999>[FastAPI]</color>" {
+
 class JWTAuthenticator {
     -secret_key: string
     -algorithm: string
@@ -58,6 +61,11 @@ class PasswordHasher {
     +get_password_hash(password: string): string
 }
 
+class HashAlgorithm {
+    +hash(data: string): string
+    +verify(data: string, hash: string): bool
+}
+
 interface UserProvider {
     +get_user(username: string): User
 }
@@ -66,10 +74,17 @@ class DatabaseUserProvider {
     +get_user(username: string): User
 }
 
+class UserRepository {
+    +find_by_username(username: string): User
+}
+
 JWTAuthenticator --down--> UserProvider : "Uses to fetch user"
 DatabaseUserProvider ..up|> UserProvider : "Implements"
+
 JWTAuthenticator --right--> PasswordHasher : "Uses for verification"
+PasswordHasher --down--> HashAlgorithm : "Delegates hashing"
+
+DatabaseUserProvider --right--> UserRepository : "Fetches user data"
 }
 
 @enduml
-

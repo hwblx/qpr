@@ -3,25 +3,35 @@
 # Usage:
 #   qpr [options] <prefix-or-filename>...
 # Options:
-#   --png        Output PNG instead of SVG
-#   --print      Display PNG in terminal (implies --png)
-#   -q, --quiet  Suppress output messages
-#   -h, --help   Show this help message
+#   --png            Output PNG instead of SVG
+#   --print          Display PNG in terminal (implies --png)
+#   --thumbnails=N   Display N thumbnails per row (implies --print, --quiet)
+#   -p, --page       Page output (implies --print, --quiet)
+#   -w, --watch      Watch for file changes and re-render
+#   -q, --quiet      Suppress output messages
+#   -h, --help       Show this help message
 set -e
 
 show_help() {
     echo "Usage: qpr [options] <prefix-or-filename>..."
     echo ""
     echo "Options:"
-    echo "  --png        Output PNG instead of SVG"
-    echo "  --print      Display PNG in terminal (implies --png)"
-    echo "  -q, --quiet  Suppress output messages"
-    echo "  -h, --help   Show this help message"
+    echo "  --png            Output PNG instead of SVG"
+    echo "  --print          Display PNG in terminal (implies --png)"
+    echo "  --thumbnails=N   Display N thumbnails per row (implies --print, --quiet)"
+    echo "  -p, --page       Page output (implies --print, --quiet)"
+    echo "  -w, --watch      Watch for file changes and re-render"
+    echo "  -q, --quiet      Suppress output messages"
+    echo "  -h, --help       Show this help message"
 }
 
 FORMAT="tsvg"
 PRINT_IMAGE=false
+WATCH=false
+CHANGED_FILE=""
 QUIET=false
+PAGE=false
+THUMBNAILS=0
 IMAGE="plantuml/plantuml:latest"
 
 while [ $# -gt 0 ]; do
@@ -33,6 +43,49 @@ while [ $# -gt 0 ]; do
         --print)
             FORMAT="tpng"
             PRINT_IMAGE=true
+            shift
+            ;;
+         --thumbnails=*)
+            val=${1#*=}
+            case "$val" in
+                ''|*[!0-9]*)
+                    echo "Invalid value for --thumbnails: $val"
+                    exit 1
+                    ;;
+            esac
+            THUMBNAILS=$val
+            PRINT_IMAGE=true
+            FORMAT="tpng"
+            QUIET=true
+            shift
+            ;;
+        --thumbnails)
+            shift
+            [ $# -eq 0 ] && {
+                echo "--thumbnails requires a numeric argument"
+                exit 1
+            }
+            case "$1" in
+                ''|*[!0-9]*)
+                    echo "Invalid value for --thumbnails: $1"
+                    exit 1
+                    ;;
+            esac
+            THUMBNAILS=$1
+            PRINT_IMAGE=true
+            FORMAT="tpng"
+            QUIET=true
+            shift
+            ;;
+        -w|--watch)
+            WATCH=true
+            shift
+            ;;
+        -p|--page)
+            PAGE=true
+            PRINT_IMAGE=true
+            FORMAT="tpng"
+            QUIET=true
             shift
             ;;
         -q|--quiet)
@@ -62,6 +115,14 @@ fi
 if [ "$PRINT_IMAGE" = true ] && ! command -v kitten > /dev/null 2>&1; then
     echo "Error: 'kitten' command not found. Required for --print."
     exit 1
+fi
+
+if [ "$WATCH" = true ]; then
+    if ! command -v inotifywait > /dev/null 2>&1; then
+        echo "Error: 'inotifywait' command not found. Required for --watch."
+        echo "Please install 'inotify-tools'."
+        exit 1
+    fi
 fi
 
 if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
@@ -117,41 +178,114 @@ done
 # 'set --' clears existing arguments.
 # 'IFS=' prevents trimming whitespace from filenames.
 # 'read -r' handles backslashes correctly.
-# The '<<EOF' block feeds the sorted, unique list of files into the loop.
+# The '<<EOF' block feeds the unique list of files (preserving order) into the loop.
 set --
 while IFS= read -r FILENAME; do
     [ -n "$FILENAME" ] && set -- "$@" "$FILENAME"
 done <<EOF
-$(echo "$TMP_FILES" | sort -u)
+$(echo "$TMP_FILES" | awk '!seen[$0]++')
 EOF
-
-COUNT=$#
 
 if [ "$QUIET" = "false" ]; then
     VERSION=$(docker run --rm "$IMAGE" plantuml -version | sed -n '1p')
     echo "Using $VERSION"
 fi
 
-for file in "$@"; do
-    [ "$QUIET" = "false" ] && echo "Rendering $file ..."
-    # Get absolute directory and filename
-    FILE_DIR=$(cd "$(dirname "$file")" && pwd)
-    FILE_NAME=$(basename "$file")
+[ "$PAGE" = true ] || [ "$THUMBNAILS" -gt 0 ] && printf '\033[H\033[2J'
 
-    docker run --rm \
-      --user "$(id -u):$(id -g)" \
-      -e HOME=/tmp \
-      -e JAVA_TOOL_OPTIONS="-Duser.home=/tmp -Djava.io.tmpdir=/tmp" \
-      -v "$FILE_DIR":/workspace \
-      -w /workspace \
-      "$IMAGE" \
-      plantuml -${FORMAT} "$FILE_NAME" -o /workspace 2>&1 | grep -v "Picked up JAVA_TOOL_OPTIONS" || true
+while :; do
+    COUNT=0
 
     if [ "$PRINT_IMAGE" = true ]; then
-        PNG_FILE="${file%.puml}.png"
-        [ -f "$PNG_FILE" ] && kitten icat "$PNG_FILE"
+        size=$(stty size < /dev/tty 2>/dev/null) || size=""
+        rows=${size%% *}
+        cols=${size##* }
+        : "${ROWS:=${LINES:-24}}"
+        : "${COLS:=${COLUMNS:-80}}"
+
+        window_size=$(kitty icat --print-window-size 2>/dev/null) || window_size=""
+        width=${window_size%x*}
+        height=${window_size#*x}
+        : "${width:=640}"
+        : "${height:=400}"
+
+        if [ "$THUMBNAILS" -eq 0 ]; then
+            WINDOW_COLS=$(( cols * 90 / 100 ))
+            WINDOW_ROWS=$(( rows * 90 / 100 ))
+            WINDOW_WIDTH=$(( width * 90 / 100 ))
+            WINDOW_HEIGHT=$(( height * 90 / 100 ))
+        elif [ -z "$CHANGED_FILE" ]; then 
+            THUMBNAIL_COLS=$(( cols / THUMBNAILS ))
+            THUMBNAIL_ROWS=$(( rows / THUMBNAILS ))
+            THUMBNAIL_COUNT=0
+            THUMBNAIL_GRID_COL=0
+            THUMBNAIL_GRID_ROW=0
+        fi
     fi
+
+    for file in "$@"; do
+        # If a file change triggered this run, only process that file
+        if [ -n "$CHANGED_FILE" ] && [ "$file" != "$CHANGED_FILE" ]; then
+            continue
+        fi
+
+        COUNT=$((COUNT + 1))
+        FILE_DIR=$(cd "$(dirname "$file")" && pwd)
+        FILE_NAME=$(basename "$file")
+        [ "$QUIET" = "false" ] && echo "Rendering $file ..."
+
+        docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          -e HOME=/tmp \
+          -e JAVA_TOOL_OPTIONS="-Duser.home=/tmp -Djava.io.tmpdir=/tmp" \
+          -v "$FILE_DIR":/workspace \
+          -w /workspace \
+          "$IMAGE" \
+          plantuml -${FORMAT} "$FILE_NAME" -o /workspace > /dev/null 2>&1 |
+          grep -v "Picked up JAVA_TOOL_OPTIONS" || true
+
+        if [ "$PRINT_IMAGE" = true ]; then
+            PNG_FILE=${file:+${file%.puml}.png}
+
+            [ -f "$PNG_FILE" ] && {
+                if [ "$PAGE" = true ] && [ "$THUMBNAILS" -eq 0 ]; then
+                    i=0
+                    while [ "$i" -lt "$WINDOW_ROWS" ]; do
+                        printf '\n'
+                        i=$((i + 1))
+                    done
+                fi
+
+                if [ "$THUMBNAILS" -eq 0 ]; then
+                    kitten icat \
+                        --align center --fit both \
+                        --use-window-size "$WINDOW_COLS","$WINDOW_ROWS","$WINDOW_WIDTH","$WINDOW_HEIGHT" \
+                        "$PNG_FILE"
+                else
+                    kitten icat \
+                        --place "$THUMBNAIL_COLS"x"$THUMBNAIL_ROWS"@"$THUMBNAIL_GRID_COL"x"$THUMBNAIL_GRID_ROW" \
+                        "$PNG_FILE"
+
+                    THUMBNAIL_COUNT=$(( THUMBNAIL_COUNT + 1 ))
+                    THUMBNAIL_GRID_COL=$(( THUMBNAIL_COUNT % THUMBNAILS * THUMBNAIL_COLS))
+                    # shellcheck disable=SC2017
+                    THUMBNAIL_GRID_ROW=$(( THUMBNAIL_COUNT / THUMBNAILS * THUMBNAIL_ROWS))
+                fi
+          }
+        fi
+
+        # If triggered by a change, stop after processing that file
+        [ -n "$CHANGED_FILE" ] && break
+    done
+
+    [ "$QUIET" = "false" ] && echo "Done! Rendered $COUNT diagram(s)."
+
+    # Exit if not in watch mode
+    if [ "$WATCH" != true ]; then
+        break
+    fi
+
+    [ "$QUIET" = "false" ] && echo "Watching for changes..."
+
+    CHANGED_FILE=$(inotifywait -e modify -e close_write --format "%w%f" -q "$@")
 done
-
-[ "$QUIET" = "false" ] && echo "Done! Rendered $COUNT diagram(s)."
-

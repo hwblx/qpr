@@ -14,7 +14,7 @@
 FROM docker:dind
 
 # Install shells and coreutils (for realpath)
-RUN apk add --no-cache bash dash zsh busybox-extras coreutils checkbashisms shellcheck
+RUN apk add --no-cache bash dash zsh busybox-extras coreutils inotify-tools checkbashisms shellcheck
 
 # Ensure docker client talks to the local dind daemon
 ENV DOCKER_HOST=unix:///var/run/docker.sock
@@ -26,14 +26,15 @@ WORKDIR /app
 COPY qpr /usr/local/bin/qpr
 RUN chmod +x /usr/local/bin/qpr
 RUN cp /usr/local/bin/qpr /app/qpr
-COPY templates/ /app/templates/
+COPY tests/docker/templates/ /app/templates/
 
 # Start the Docker daemon in the background and then launch a shell
 # CMD ["sh", "-c", "dockerd-entrypoint.sh > /dev/null 2>&1 & sleep 5; /bin/sh"]
 CMD ["sh", "-c", "\
-    echo 'Starting docker daemon...'; \
+    echo -n 'Starting Docker daemon (DinD)... '; \
     dockerd-entrypoint.sh > /dev/null 2>&1 & \
     sleep 5; \
+    echo 'up!'; \
     echo -n 'Running checkbashisms on qpr... '; checkbashisms /usr/local/bin/qpr && echo 'passed!' || echo 'failed!'; \
     echo -n 'Running shellcheck on qpr... '; shellcheck --shell=sh /usr/local/bin/qpr && echo 'passed!' || echo 'failed!'; \
     exec /bin/sh \

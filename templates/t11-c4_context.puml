@@ -2,8 +2,8 @@
 !include <C4/C4_Context>
 ' !include C4-PlantUML/C4_Context.puml
 !theme cloudscape-design
-skinparam backgroundColor #black
-skinparam defaultFontColor #white
+skinparam backgroundColor black
+skinparam defaultFontColor white
 /'
 C1 – System Context Diagram
 
@@ -28,7 +28,6 @@ interacts with human users (*People) and other software systems (*Software Syste
 - IoT Gateway -> System: Forwards aggregated data
 
 '/
-
 Person(user, "Authenticated User", "Views sensor data and manages account via browser")
 Person(admin, "Administrator", "Manages the system and users via browser")
 

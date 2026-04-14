@@ -4,8 +4,9 @@
 ' !include C4-PlantUML/C4_Context.puml
 ' !include C4-PlantUML/C4_Container.puml
 !theme cloudscape-design
-skinparam backgroundColor #black
-skinparam defaultFontColor #white
+skinparam backgroundColor black
+skinparam defaultFontColor white
+skinparam package<<boundary>>BorderColor #00AEEF
 
 /'
 C2 – Container Diagram
@@ -24,15 +25,13 @@ with each other, with *People, and with *External Software Systems.
 
 *Relationships:
 - API Application -> Database: Reads from and writes to via SQL
-
 '/
 
-System_Boundary(iot_api_system, "IoT Sensor Network API") {
+System_Boundary(iot_api_system, "<color:#CCCCCC>IoT Sensor Network API</color>") <<boundary>> {
     Container(api_app, "API Application", "FastAPI", "Provides API endpoints for data collection, user management, and data retrieval")
     ContainerDb(database, "Database", "TimescaleDB/PostgreSQL", "Stores sensor telemetry, user profiles, and system configuration")
 }
 
-Rel(api_app, database, "Reads from and writes to", "SQL/TCP")
-
+Rel(api_app, database, "Reads from\nand writes to", "SQL/TCP")
 @enduml
 

@@ -1,0 +1,52 @@
+@startuml
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+/'
+C3 – Component Diagram
+
+Purpose:
+Shows the internal structure of a single *Container by decomposing it into
+*Components, their responsibilities, and the relationships between them.
+
+Scope:
+- Exactly one *Container from the C2 Container Diagram
+- The container is treated as the system boundary at this level
+
+*Container:
+- The container being decomposed (e.g., API, backend service, web application)
+
+*Components:
+- Components within the container, each representing a cohesive unit of
+  functionality with a well-defined responsibility and interface
+  (e.g., controllers, services, repositories)
+
+*Relationships:
+- Component -> Component: Interactions within the container
+- Component -> External Software System: Calls made directly from the container
+- Component -> Container (external): Calls to other containers, when relevant
+
+Design Notes:
+- This diagram captures the internal design and structure of a container
+- Design patterns and architectural patterns may be shown where they help
+  explain responsibility, direction of dependencies, or extensibility
+  (e.g., MVC, layered architecture, hexagonal / ports and adapters, CQRS)
+- Components should be coarse-grained and meaningful; avoid modeling
+  classes, utilities, or framework internals
+- Cross-cutting concerns (e.g., logging, security) may be implied rather
+  than explicitly shown
+- Class-level design and detailed implementation belong to the Code (C4) level
+'/
+
+System_Boundary(api_boundary, "API Service") {
+    Component(recipe_controller, "Recipe Controller", "Handles HTTP requests.")
+    Component(recipe_repository, "Recipe Repository", "Interacts with the Database.")
+    Component(cdn_client, "CDN Client", "Uploads/manages images on the CDN.")
+}
+
+Rel(recipe_controller, recipe_repository, "Uses")
+Rel(recipe_controller, cdn_client, "Uses")
+
+@enduml
+
