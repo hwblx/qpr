@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://res.cloudinary.com/du23meydk/video/upload/qpr_demo_v2_zo9b24.mp4">
-    <img src=".doc/thumbnail.png" alt="See Demo" width="240"/>
+    <img src=".doc/thumbnail_2.png" alt="See Demo" width="240"/>
   </a>
   <br/>
   <em>(Demo video)</em>
