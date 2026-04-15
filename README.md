@@ -105,6 +105,6 @@ A graphics-capable terminal UI divided into three panes: a rendering layer, a co
 
 ## Acknowledgments
 
-- **PlantUML** for its powerful diagramming capabilities.
-- **Kitty** for its excellent graphics protocol.
-- **C4 model** for making software architecture easier to visualize and understand.
+- [PlantUML](https://plantuml.com/) for its powerful diagramming capabilities.
+- [Kitty](https://sw.kovidgoyal.net/kitty/) for its excellent graphics protocol.
+- [C4](https://c4model.com) for making software architecture easier to visualize and understand.
