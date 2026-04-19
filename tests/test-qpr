@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo 'Starting tests!'
+
+echo -n 'Running checkbashisms on qpr... '
+checkbashisms /usr/local/bin/qpr && echo 'passed!' || echo 'failed!' 
+
+echo -n 'Running shellcheck on qpr... '
+shellcheck --shell=sh /usr/local/bin/qpr && echo 'passed!' || echo 'failed!'
+
+echo 'Running docker integration test... '
+qpr templates/c4/c4-1.puml && echo '...passed!' || echo '...failed!'
+
+echo 'Running path resolution tests... '
+qpr templates/class/class- templates/activity/*.puml templates/c4/c4-[123]*puml && echo '...passed!' || echo '...failed!'
+
+

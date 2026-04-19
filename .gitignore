@@ -1,10 +1,7 @@
 # project files
 .aider.*
-*.mp4
 .todo
-video/
-message.txt
-.diff-*
+extras/
 
 # Ignore compiled files
 *.o

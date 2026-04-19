@@ -3,36 +3,236 @@
 # Usage:
 #   qpr [options] <prefix-or-filename>...
 # Options:
-#   --png            Output PNG instead of SVG
-#   --print          Display PNG in terminal (implies --png)
-#   --thumbnails=N   Display N thumbnails per row (implies --print, --quiet)
-#   -p, --page       Page output (implies --print, --quiet)
-#   -w, --watch      Watch for file changes and re-render
-#   -q, --quiet      Suppress output messages
-#   -h, --help       Show this help message
+#   --png             Output PNG (default)
+#   --svg             Output SVG
+#   --txt             Output ASCII art
+#   --print           Display PNG/TXT in terminal (ignored for SVG)
+#   --page            Display paged PNG image (implies --print, --quiet)"
+#   --overlay         Display PNG image overlay (implies --print, --quiet)"
+#   --grid=ColsxRows  Display PNG image grid, e.g 4x3 (implies --print, --quiet)
+#   -s, --server      Use a PlantUML server (http://localhost:8080)"
+#   -w, --watch       Watch for file changes and re-render
+#   -q, --quiet       Suppress output messages
+#   -h, --help        Show this help message
 set -e
 
 show_help() {
     echo "Usage: qpr [options] <prefix-or-filename>..."
     echo ""
     echo "Options:"
-    echo "  --png            Output PNG instead of SVG"
-    echo "  --print          Display PNG in terminal (implies --png)"
-    echo "  --thumbnails=N   Display N thumbnails per row (implies --print, --quiet)"
-    echo "  -p, --page       Page output (implies --print, --quiet)"
-    echo "  -w, --watch      Watch for file changes and re-render"
-    echo "  -q, --quiet      Suppress output messages"
-    echo "  -h, --help       Show this help message"
+    echo "  --png             Output PNG images (default)"
+    echo "  --svg             Output SVG images"
+    echo "  --txt             Output ASCII art diagrams"
+    echo "  --print           Display PNG/TXT in terminal (ignored for SVG)"
+    echo "  --page            Display paged PNG image (implies --print, --quiet)"
+    echo "  --overlay         Display PNG image overlay (implies --print, --quiet)"
+    echo "  --grid=ColsxRows  Display PNG image grid, e.g 4x3 (implies --print, --quiet)"
+    echo "  -s, --server      Use a PlantUML server (http://localhost:8080)"
+    echo "  -w, --watch       Watch for file changes and re-render"
+    echo "  -q, --quiet       Suppress output messages"
+    echo "  -h, --help        Show this help message"
 }
 
-FORMAT="tsvg"
+check_dependencies() {
+    if [ "$PRINT_IMAGE" = true ] && [ "$FORMAT" = "tpng" ] && ! command -v kitten > /dev/null 2>&1; then
+        echo "Error: 'kitten' command not found. Required for --print."
+        exit 1
+    fi
+
+    if [ "$WATCH" = true ]; then
+        if ! command -v inotifywait > /dev/null 2>&1; then
+            echo "Error: 'inotifywait' command not found. Required for --watch."
+            echo "Please install 'inotify-tools'."
+            exit 1
+        fi
+    fi
+
+    if [ "$SERVER" != "0" ]; then
+        if ! curl -s --head "http://$SERVER" > /dev/null; then
+            if ! docker image inspect "$SERVER_IMAGE" > /dev/null 2>&1; then
+                echo "Docker image '$SERVER_IMAGE' not found locally."
+                printf "Do you want to pull it now? [y/N] "
+                read -r REPLY
+                case "$REPLY" in
+                    [Yy]*) ;;
+                    *) echo "Aborting."; exit 1 ;;
+                esac
+                docker pull "$SERVER_IMAGE"
+            fi
+            echo "Starting PlantUML server..."
+            docker run -d -p 8080:8080 "$SERVER_IMAGE" > /dev/null
+            until curl -s --head "http://$SERVER" > /dev/null; do
+                sleep 1
+            done
+        fi
+    else
+        if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "Docker image '$IMAGE' not found locally."
+            printf "Do you want to pull it now? [y/N] "
+            read -r REPLY
+            case "$REPLY" in
+                [Yy]*) ;;
+                *) echo "Aborting."; exit 1 ;;
+            esac
+            docker pull "$IMAGE"
+        fi
+    fi
+}
+
+collect_files() {
+    for ARG in "$@"; do
+        case "$ARG" in
+            *.puml)
+                if [ ! -f "$ARG" ]; then
+                    echo "Error: file '${ARG}' does not exist"
+                    exit 1
+                fi
+                TMP_FILES="${TMP_FILES}${ARG}
+"
+                ;;
+            *)
+                ARG_DIR=$(dirname "$ARG")
+                ARG_BASE=$(basename "$ARG")
+                BASE_FILE="${ARG}.puml"
+                FOUND=false
+                for f in "${ARG}"*.puml; do
+                    [ -e "$f" ] || continue
+                    FOUND=true
+                    break
+                done
+                if [ "$FOUND" = false ]; then
+                    echo "Error: no files matching '${ARG}*.puml'"
+                    exit 1
+                fi
+                [ -f "$BASE_FILE" ] && TMP_FILES="${TMP_FILES}${BASE_FILE}
+"
+                MATCHES=$(find "$ARG_DIR" -maxdepth 1 -name "${ARG_BASE}*.puml" | sort)
+                for f in $MATCHES; do
+                    [ "$f" = "$BASE_FILE" ] && continue
+                    TMP_FILES="${TMP_FILES}${f}
+"
+                done
+                ;;
+        esac
+    done
+}
+
+calculate_geometry() {
+    [ "$PRINT_IMAGE" != true ] && return
+
+    size=$(stty size < /dev/tty 2>/dev/null) || size=""
+    rows=${size%% *}
+    cols=${size##* }
+    : "${ROWS:=${LINES:-24}}"
+    : "${COLS:=${COLUMNS:-80}}"
+
+    window_size=$(kitty icat --print-window-size 2>/dev/null) || window_size=""
+    width=${window_size%x*}
+    height=${window_size#*x}
+    : "${width:=640}"
+    : "${height:=400}"
+
+    if [ "$GRID" = true ]; then
+        GRID_ITEMS=$(( GRID_COLS * GRID_ROWS ))
+        GRID_COL_SIZE=$(( cols / GRID_COLS ))
+        GRID_ROW_SIZE=$(( rows / GRID_ROWS ))
+    elif [ -z "$CHANGED_FILE" ]; then
+        WINDOW_COLS=$(( cols * 90 / 100 ))
+        WINDOW_ROWS=$(( rows * 90 / 100 ))
+        WINDOW_WIDTH=$(( width * 90 / 100 ))
+        WINDOW_HEIGHT=$(( height * 90 / 100 ))
+    fi
+}
+
+render_file() {
+    file=$1
+    FILE_DIR=$(cd "$(dirname "$file")" && pwd)
+    FILE_NAME=$(basename "$file")
+    [ "$QUIET" = "false" ] && echo "Rendering $file ..."
+
+    if [ "$SERVER" = "0" ]; then
+        docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          -e HOME=/tmp \
+          -e JAVA_TOOL_OPTIONS="-Duser.home=/tmp -Djava.io.tmpdir=/tmp" \
+          -v "$FILE_DIR":/workspace \
+          -w /workspace \
+          "$IMAGE" \
+          plantuml -"${FORMAT}" "$FILE_NAME" -o /workspace > /dev/null 2>&1 |
+          grep -v "Picked up JAVA_TOOL_OPTIONS" || true
+    else
+        ext=${FORMAT#t}
+        curl -s -X POST --data-binary @"$file" "http://$SERVER/$ext/" > "${file%.puml}.$ext"
+    fi
+}
+
+display_image() {
+    [ "$PRINT_IMAGE" != true ] && return
+    file=$1
+
+    if [ "$FORMAT" = "tpng" ]; then
+        PNG_FILE=${file:+${file%.puml}.png}
+
+        [ -f "$PNG_FILE" ] || return
+
+        if [ "$GRID" = true ]; then
+            GRID_COL_INDEX=$(( GRID_COUNT % GRID_COLS ))
+            GRID_COL_POS=$(( GRID_COL_INDEX * GRID_COL_SIZE ))
+
+            GRID_ROW_INDEX=$(( GRID_COUNT / GRID_COLS ))
+            GRID_ROW_POS=$(( GRID_ROW_INDEX * GRID_ROW_SIZE ))
+            
+            GRID_COUNT=$(( (GRID_COUNT + 1) % GRID_ITEMS ))
+            
+            kitten icat \
+                --place "$GRID_COL_SIZE"x"$GRID_ROW_SIZE"@"$GRID_COL_POS"x"$GRID_ROW_POS" \
+                "$PNG_FILE"
+
+            printf '\e[H'
+
+        elif [ "$OVERLAY" = true ]; then
+            kitten icat \
+                --clear \
+                --place "$cols"x"$rows"@0x0 \
+                "$PNG_FILE"
+            
+            printf '\e[H'
+            # printf '\e[5n' > /dev/tty
+        
+        else
+            if [ "$PAGE" = true ]; then
+                i=0
+                while [ "$i" -lt "$WINDOW_ROWS" ]; do
+                    printf '\n'
+                    i=$((i + 1))
+                done
+            fi
+
+            kitten icat \
+                --align center --fit both \
+                --use-window-size "$WINDOW_COLS","$WINDOW_ROWS","$WINDOW_WIDTH","$WINDOW_HEIGHT" \
+                "$PNG_FILE"
+        fi
+        
+    elif [ "$FORMAT" = "ttxt" ]; then
+        ATXT_FILE=${file:+${file%.puml}.atxt}
+        
+        [ -f "$ATXT_FILE" ] || return
+        cat "$ATXT_FILE"
+    fi
+}
+
+FORMAT="tpng"
 PRINT_IMAGE=false
 WATCH=false
-CHANGED_FILE=""
 QUIET=false
 PAGE=false
-THUMBNAILS=0
+OVERLAY=false
+GRID=false
+GRID_COUNT=0
 IMAGE="plantuml/plantuml:latest"
+SERVER_IMAGE="plantuml/plantuml-server:jetty"
+SERVER=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,41 +240,67 @@ while [ $# -gt 0 ]; do
             FORMAT="tpng"
             shift
             ;;
-        --print)
-            FORMAT="tpng"
-            PRINT_IMAGE=true
+        --svg)
+            FORMAT="tsvg"
             shift
             ;;
-         --thumbnails=*)
-            val=${1#*=}
-            case "$val" in
-                ''|*[!0-9]*)
-                    echo "Invalid value for --thumbnails: $val"
-                    exit 1
-                    ;;
-            esac
-            THUMBNAILS=$val
+        --txt)
+            FORMAT="ttxt"
+            shift
+            ;;
+        --print)
+            if [ "$FORMAT" = "ttxt" ] || [ "$FORMAT" = "tpng" ]; then
+                PRINT_IMAGE=true
+            fi
+            shift
+            ;;
+        --overlay)
+            OVERLAY=true
             PRINT_IMAGE=true
-            FORMAT="tpng"
             QUIET=true
             shift
             ;;
-        --thumbnails)
-            shift
-            [ $# -eq 0 ] && {
-                echo "--thumbnails requires a numeric argument"
+        --grid|--grid=*)
+            case "$1" in
+                --grid)
+                    shift
+                    value=$1
+                    ;;
+                --grid=*)
+                    value=${1#*=}
+                    ;;
+            esac
+
+            case "$value" in
+                *x*)
+                    GRID_COLS=${value%x*}
+                    GRID_ROWS=${value#*x}
+                    ;;
+                *)
+                    echo "Error: --grid must be ColsxRows (e.g. 4x3)" >&2
+                    exit 1
+                    ;;
+            esac
+
+            case "$GRID_COLS:$GRID_ROWS" in
+                *[!0-9:]*|:|:*|*:)
+                    echo "Error: thumbnails must be positive integers" >&2
+                    exit 1
+                    ;;
+            esac
+
+            [ "$GRID_COLS" -eq 0 ] 2>/dev/null || [ "$GRID_ROWS" -eq 0 ] 2>/dev/null && {
+                echo "Error: thumbnails must be > 0" >&2
                 exit 1
             }
-            case "$1" in
-                ''|*[!0-9]*)
-                    echo "Invalid value for --thumbnails: $1"
-                    exit 1
-                    ;;
-            esac
-            THUMBNAILS=$1
+            
+            GRID=true
             PRINT_IMAGE=true
-            FORMAT="tpng"
             QUIET=true
+            shift
+            ;;
+        -s|--server)
+            SERVER="localhost:8080"
             shift
             ;;
         -w|--watch)
@@ -84,7 +310,6 @@ while [ $# -gt 0 ]; do
         -p|--page)
             PAGE=true
             PRINT_IMAGE=true
-            FORMAT="tpng"
             QUIET=true
             shift
             ;;
@@ -112,67 +337,11 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-if [ "$PRINT_IMAGE" = true ] && ! command -v kitten > /dev/null 2>&1; then
-    echo "Error: 'kitten' command not found. Required for --print."
-    exit 1
-fi
-
-if [ "$WATCH" = true ]; then
-    if ! command -v inotifywait > /dev/null 2>&1; then
-        echo "Error: 'inotifywait' command not found. Required for --watch."
-        echo "Please install 'inotify-tools'."
-        exit 1
-    fi
-fi
-
-if ! docker image inspect "$IMAGE" > /dev/null 2>&1; then
-    echo "Docker image '$IMAGE' not found locally."
-    printf "Do you want to pull it now? [y/N] "
-    read -r REPLY
-    case "$REPLY" in
-        [Yy]*) ;;
-        *) echo "Aborting."; exit 1 ;;
-    esac
-    docker pull "$IMAGE"
-fi
+check_dependencies
 
 # Collect files into positional parameters
 TMP_FILES=""
-for ARG in "$@"; do
-    case "$ARG" in
-        *.puml)
-            if [ ! -f "$ARG" ]; then
-                echo "Error: file '${ARG}' does not exist"
-                exit 1
-            fi
-            TMP_FILES="${TMP_FILES}${ARG}
-"
-            ;;
-        *)
-            ARG_DIR=$(dirname "$ARG")
-            ARG_BASE=$(basename "$ARG")
-            BASE_FILE="${ARG}.puml"
-            FOUND=false
-            for f in "${ARG}"*.puml; do
-                [ -e "$f" ] || continue
-                FOUND=true
-                break
-            done
-            if [ "$FOUND" = false ]; then
-                echo "Error: no files matching '${ARG}*.puml'"
-                exit 1
-            fi
-            [ -f "$BASE_FILE" ] && TMP_FILES="${TMP_FILES}${BASE_FILE}
-"
-            MATCHES=$(find "$ARG_DIR" -maxdepth 1 -name "${ARG_BASE}*.puml" | sort)
-            for f in $MATCHES; do
-                [ "$f" = "$BASE_FILE" ] && continue
-                TMP_FILES="${TMP_FILES}${f}
-"
-            done
-            ;;
-    esac
-done
+collect_files "$@"
 
 # Set positional parameters to the collected files (unique)
 # 'set --' clears existing arguments.
@@ -187,41 +356,22 @@ $(echo "$TMP_FILES" | awk '!seen[$0]++')
 EOF
 
 if [ "$QUIET" = "false" ]; then
-    VERSION=$(docker run --rm "$IMAGE" plantuml -version | sed -n '1p')
-    echo "Using $VERSION"
+    if [ "$SERVER" = "0" ]; then
+        VERSION=$(docker run --rm "$IMAGE" plantuml -version | sed -n '1p')
+        echo "Using $VERSION"
+    else
+        echo "PlantUML server running at http://$SERVER"
+    fi
 fi
 
-[ "$PAGE" = true ] || [ "$THUMBNAILS" -gt 0 ] && printf '\033[H\033[2J'
+CHANGED_FILE=""
+if [ "$OVERLAY" = true ] || [ "$PAGE" = true ] || [ "$GRID" = true ]; then
+    clear # printf '\033[H\033[2J'
+fi
 
 while :; do
     COUNT=0
-
-    if [ "$PRINT_IMAGE" = true ]; then
-        size=$(stty size < /dev/tty 2>/dev/null) || size=""
-        rows=${size%% *}
-        cols=${size##* }
-        : "${ROWS:=${LINES:-24}}"
-        : "${COLS:=${COLUMNS:-80}}"
-
-        window_size=$(kitty icat --print-window-size 2>/dev/null) || window_size=""
-        width=${window_size%x*}
-        height=${window_size#*x}
-        : "${width:=640}"
-        : "${height:=400}"
-
-        if [ "$THUMBNAILS" -eq 0 ]; then
-            WINDOW_COLS=$(( cols * 90 / 100 ))
-            WINDOW_ROWS=$(( rows * 90 / 100 ))
-            WINDOW_WIDTH=$(( width * 90 / 100 ))
-            WINDOW_HEIGHT=$(( height * 90 / 100 ))
-        elif [ -z "$CHANGED_FILE" ]; then 
-            THUMBNAIL_COLS=$(( cols / THUMBNAILS ))
-            THUMBNAIL_ROWS=$(( rows / THUMBNAILS ))
-            THUMBNAIL_COUNT=0
-            THUMBNAIL_GRID_COL=0
-            THUMBNAIL_GRID_ROW=0
-        fi
-    fi
+    calculate_geometry
 
     for file in "$@"; do
         # If a file change triggered this run, only process that file
@@ -230,49 +380,8 @@ while :; do
         fi
 
         COUNT=$((COUNT + 1))
-        FILE_DIR=$(cd "$(dirname "$file")" && pwd)
-        FILE_NAME=$(basename "$file")
-        [ "$QUIET" = "false" ] && echo "Rendering $file ..."
-
-        docker run --rm \
-          --user "$(id -u):$(id -g)" \
-          -e HOME=/tmp \
-          -e JAVA_TOOL_OPTIONS="-Duser.home=/tmp -Djava.io.tmpdir=/tmp" \
-          -v "$FILE_DIR":/workspace \
-          -w /workspace \
-          "$IMAGE" \
-          plantuml -${FORMAT} "$FILE_NAME" -o /workspace > /dev/null 2>&1 |
-          grep -v "Picked up JAVA_TOOL_OPTIONS" || true
-
-        if [ "$PRINT_IMAGE" = true ]; then
-            PNG_FILE=${file:+${file%.puml}.png}
-
-            [ -f "$PNG_FILE" ] && {
-                if [ "$PAGE" = true ] && [ "$THUMBNAILS" -eq 0 ]; then
-                    i=0
-                    while [ "$i" -lt "$WINDOW_ROWS" ]; do
-                        printf '\n'
-                        i=$((i + 1))
-                    done
-                fi
-
-                if [ "$THUMBNAILS" -eq 0 ]; then
-                    kitten icat \
-                        --align center --fit both \
-                        --use-window-size "$WINDOW_COLS","$WINDOW_ROWS","$WINDOW_WIDTH","$WINDOW_HEIGHT" \
-                        "$PNG_FILE"
-                else
-                    kitten icat \
-                        --place "$THUMBNAIL_COLS"x"$THUMBNAIL_ROWS"@"$THUMBNAIL_GRID_COL"x"$THUMBNAIL_GRID_ROW" \
-                        "$PNG_FILE"
-
-                    THUMBNAIL_COUNT=$(( THUMBNAIL_COUNT + 1 ))
-                    THUMBNAIL_GRID_COL=$(( THUMBNAIL_COUNT % THUMBNAILS * THUMBNAIL_COLS))
-                    # shellcheck disable=SC2017
-                    THUMBNAIL_GRID_ROW=$(( THUMBNAIL_COUNT / THUMBNAILS * THUMBNAIL_ROWS))
-                fi
-          }
-        fi
+        render_file "$file"
+        display_image "$file"
 
         # If triggered by a change, stop after processing that file
         [ -n "$CHANGED_FILE" ] && break
