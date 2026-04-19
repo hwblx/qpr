@@ -1,6 +1,6 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a minimal Bash/Dash/Zsh wrapper for rendering [PlantUML diagrams](https://plantuml.com/) via the official [Docker image](https://hub.docker.com/r/plantuml/plantuml), with optional image output in the [Kitty terminal](https://sw.kovidgoyal.net/kitty/). It provides a simple interface for generating PNG and SVG output and fits naturally into integrated, terminal-centric development workflows.
+`qpr` is a minimal Bash/Dash/Zsh wrapper for rendering [PlantUML diagrams](https://plantuml.com/) via the official [Docker image](https://hub.docker.com/r/plantuml/plantuml), with optional image output in the [Kitty terminal](https://sw.kovidgoyal.net/kitty/). It offers a simple yet effective interface for generating diagrams (PNG/SVG) and fits naturally into terminal-centric development workflows.
 
 <p align="center">
   <a href="https://res.cloudinary.com/du23meydk/video/upload/v1776546530/qpr_demo_v3_tcfaoy.mp4">
@@ -108,13 +108,6 @@ A graphics-capable terminal UI divided into three panes: a rendering layer, a co
   - Explore LLMs and prompting strategies that perform well in an IDE workflow.
 
 ## Acknowledgments
-
-<<<<<<< HEAD
 - [PlantUML](https://plantuml.com/) for its powerful diagramming capabilities.
 - [Kitty](https://sw.kovidgoyal.net/kitty/) for its excellent graphics protocol.
 - [C4](https://c4model.com) for making software architecture easier to visualize and understand.
-=======
-- **PlantUML** for its powerful diagramming capabilities.
-- **Kitty** for its excellent graphics protocol.
-- **C4 model** for making software architecture easier to visualize and understand.
->>>>>>> development
