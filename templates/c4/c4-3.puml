@@ -39,7 +39,7 @@ Design Notes:
 - Class-level design and detailed implementation belong to the Code (C4) level
 '/
 
-System_Boundary(api_boundary, "API Service") {
+Container_Boundary(api_boundary, "API Service") {
     Component(recipe_controller, "Recipe Controller", "Handles HTTP requests.")
     Component(recipe_repository, "Recipe Repository", "Interacts with the Database.")
     Component(cdn_client, "CDN Client", "Uploads/manages images on the CDN.")
