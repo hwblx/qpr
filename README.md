@@ -69,7 +69,7 @@ qpr --print c4
 ```
 ### Templates
 
-The repository includes a `templates/` directory with starter files that you can copy and modify for testing the `qpr` workflow: [Activity Diagram](https://plantuml.com/activity-diagram-beta), [C4 Model](https://c4model.com) (Context, Container and Component diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library) and [Class Diagram](https://plantuml.com/class-diagram) and .
+The repository includes a `templates/` directory with starter files that you can copy and modify for testing the `qpr` workflow: [Activity Diagram](https://plantuml.com/activity-diagram-beta), [C4 model](https://c4model.com) (Context, Container and Component diagrams using the [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) library) and [Class Diagram](https://plantuml.com/class-diagram).
 ## Integration
 
 The `qpr` workflow integrates PlantUML into a terminal-based, IDE-like experience suitable for occasional diagramming. More of a concept than a fully-fledged tool, `qpr` may not have reached its limits yet and could be further improved. This section outlines some ideas for future enhancements.
