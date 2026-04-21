@@ -10,6 +10,7 @@
 #   --page            Display paged PNG image (implies --print, --quiet)"
 #   --overlay         Display PNG image overlay (implies --print, --quiet)"
 #   --grid=ColsxRows  Display PNG image grid, e.g 4x3 (implies --print, --quiet)
+#   -a, --append      Append image (requires --grid and --watch)
 #   -s, --server      Use a PlantUML server (http://localhost:8080)"
 #   -w, --watch       Watch for file changes and re-render
 #   -q, --quiet       Suppress output messages
@@ -27,6 +28,7 @@ show_help() {
     echo "  --page            Display paged PNG image (implies --print, --quiet)"
     echo "  --overlay         Display PNG image overlay (implies --print, --quiet)"
     echo "  --grid=ColsxRows  Display PNG image grid, e.g 4x3 (implies --print, --quiet)"
+    echo "  -a, --append      Append image (requires --grid and --watch)"
     echo "  -s, --server      Use a PlantUML server (http://localhost:8080)"
     echo "  -w, --watch       Watch for file changes and re-render"
     echo "  -q, --quiet       Suppress output messages"
@@ -169,6 +171,7 @@ render_file() {
 display_image() {
     [ "$PRINT_IMAGE" != true ] && return
     file=$1
+    shift
 
     if [ "$FORMAT" = "tpng" ]; then
         PNG_FILE=${file:+${file%.puml}.png}
@@ -176,15 +179,28 @@ display_image() {
         [ -f "$PNG_FILE" ] || return
 
         if [ "$GRID" = true ]; then
-            GRID_COL_INDEX=$(( GRID_COUNT % GRID_COLS ))
+            if [ "$INPLACE" = true ] && [ -n "$CHANGED_FILE" ]; then
+                idx=0
+                for f in "$@"; do
+                    if [ "$f" = "$file" ]; then
+                        break
+                    fi
+                    idx=$((idx + 1))
+                done
+                CURRENT_GRID_INDEX=$idx
+            else
+                CURRENT_GRID_INDEX=$GRID_COUNT
+                GRID_COUNT=$(( (GRID_COUNT + 1) % GRID_ITEMS ))
+            fi
+
+            GRID_COL_INDEX=$(( CURRENT_GRID_INDEX % GRID_COLS ))
             GRID_COL_POS=$(( GRID_COL_INDEX * GRID_COL_SIZE ))
 
-            GRID_ROW_INDEX=$(( GRID_COUNT / GRID_COLS ))
+            GRID_ROW_INDEX=$(( CURRENT_GRID_INDEX / GRID_COLS ))
             GRID_ROW_POS=$(( GRID_ROW_INDEX * GRID_ROW_SIZE ))
             
-            GRID_COUNT=$(( (GRID_COUNT + 1) % GRID_ITEMS ))
-            
             kitten icat \
+                --image-id "$((CURRENT_GRID_INDEX + 1))" \
                 --place "$GRID_COL_SIZE"x"$GRID_ROW_SIZE"@"$GRID_COL_POS"x"$GRID_ROW_POS" \
                 "$PNG_FILE"
 
@@ -230,6 +246,7 @@ PAGE=false
 OVERLAY=false
 GRID=false
 GRID_COUNT=0
+INPLACE=true
 IMAGE="plantuml/plantuml:latest"
 SERVER_IMAGE="plantuml/plantuml-server:jetty"
 SERVER=0
@@ -297,6 +314,10 @@ while [ $# -gt 0 ]; do
             GRID=true
             PRINT_IMAGE=true
             QUIET=true
+            shift
+            ;;
+        -a|--append)
+            INPLACE=false
             shift
             ;;
         -s|--server)
@@ -381,7 +402,7 @@ while :; do
 
         COUNT=$((COUNT + 1))
         render_file "$file"
-        display_image "$file"
+        display_image "$file" "$@"
 
         # If triggered by a change, stop after processing that file
         [ -n "$CHANGED_FILE" ] && break

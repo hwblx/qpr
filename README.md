@@ -2,6 +2,8 @@
 
 `qpr` is a minimal Bash/Dash/Zsh wrapper for rendering [PlantUML diagrams](https://plantuml.com/) via the official [Docker image](https://hub.docker.com/r/plantuml/plantuml), with optional image output in the [Kitty terminal](https://sw.kovidgoyal.net/kitty/). It offers a simple yet effective interface for generating diagrams (PNG/SVG) and fits naturally into terminal-centric development workflows.
 
+**Update**: Images are now updated in place by default (using `--grid` and `--watch`), and a new --append option has been added. Not yet reflected in the demo video.
+
 <p align="center">
   <a href="https://res.cloudinary.com/du23meydk/video/upload/v1776546530/qpr_demo_v3_tcfaoy.mp4">
     <img src=".doc/thumbnail_v3.png" alt="See Demo" width="640"/>
@@ -51,10 +53,11 @@ qpr [options] <prefix-or-filename>...
 - `--page`            Display paged PNG image (implies `--print`, `--quiet`)
 - `--overlay`         Display PNG image overlay (implies `--print`, `--quiet`)
 - `--grid=ColsxRows`  Display PNG image grid, e.g 4x3 (implies `--print`, `--quiet`)
-- `-s`, `--server`    Use a PlantUML server (localhost:8080)
-- `-w`, `--watch`     Watch for file changes and re-render
-- `-q`, `--quiet`     Suppress output messages
-- `-h`, `--help`      Show help message.
+- `-a`, `--append`      Append image (requires --grid and --watch)
+- `-s`, `--server`      Use a PlantUML server (localhost:8080)
+- `-w`, `--watch`       Watch for file changes and re-render
+- `-q`, `--quiet`       Suppress output messages
+- `-h`, `--help`        Show help message.
 
 ### Examples
 
