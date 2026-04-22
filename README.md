@@ -1,6 +1,6 @@
 # qpr - Quick PlantUML Renderer
 
-`qpr` is a minimal Bash/Dash/Zsh wrapper for rendering [PlantUML diagrams](https://plantuml.com/) via the official [Docker image](https://hub.docker.com/r/plantuml/plantuml), with optional image output in the [Kitty terminal](https://sw.kovidgoyal.net/kitty/). It offers a simple yet effective interface for generating diagrams (PNG/SVG) and fits naturally into terminal-centric development workflows.
+`qpr` is a lightweight Bash/Dash/Zsh wrapper for rendering [PlantUML diagrams](https://plantuml.com/) using the official [Docker image](https://hub.docker.com/r/plantuml/plantuml), with optional image output in the [Kitty terminal](https://sw.kovidgoyal.net/kitty/). It offers a simple yet effective interface for generating diagrams (PNG/SVG) and fits naturally into terminal-centric development workflows.
 
 **Update**: Images are now updated in place by default (using `--grid` and `--watch`), and a new `--append` option has been added. Not yet reflected in the demo video.
 
@@ -14,7 +14,7 @@
 
 ## Features
 
-- **POSIX Compliant**: Compatible with `bash`, `dash`, and `zsh`.
+- **POSIX sh Compatible**: Runs on `bash`, `dash`, and `zsh`.
 - **Docker-powered**: Requires no local dependencies other than Docker. The script will prompt you to pull the [plantuml/plantuml:latest](https://hub.docker.com/r/plantuml/plantuml-server) image if it's not available locally.
 - **Server Support** (`--server`, localhost:8080): Can pull the [plantuml/plantuml-server:jetty](https://hub.docker.com/r/plantuml/plantuml-server) image for significantly faster rendering.
 - **Batch Rendering**: Supports multiple files or filename prefixes.
